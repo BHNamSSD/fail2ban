@@ -1,0 +1,81 @@
+----------------------------------------
+1. Thông tin cơ bản về Fail2ban
+----------------------------------------
+Chức năng chính:
+Giám sát file log (SSH, Apache, Nginx, vsftpd, Postfix, …).
+Phát hiện nhiều lần đăng nhập thất bại trong một khoảng thời gian.
+Thêm IP vi phạm vào iptables/firewalld (hoặc UFW) để chặn.
+Hết thời gian ban thì tự động gỡ IP ra.
+Ngôn ngữ: Python.
+Nền tảng: Linux/Unix.
+Ứng dụng: Bảo vệ dịch vụ SSH, FTP, Web server, Mail server, VoIP, v.v.
+
+
+----------------------------------------
+2. Cấu trúc hoạt động
+----------------------------------------
+Fail2ban gồm 3 thành phần chính:
+	Filter (bộ lọc): định nghĩa mẫu regex để tìm lỗi trong file log (ví dụ: "Failed password" trong /var/log/auth.log).
+	Jail (nhà giam): nơi kết hợp filter + hành động (action).
+		Ví dụ: jail.local có thể khai báo "bắt SSH", "bắt Nginx", v.v.
+	Action (hành động): lệnh thực thi khi phát hiện vi phạm, như thêm IP vào iptables hoặc gửi email cảnh báo.
+
+
+----------------------------------------
+3. Một số công cụ và lệnh làm việc với Fail2ban
+----------------------------------------
+systemctl status fail2ban
+systemctl start fail2ban
+systemctl enable fail2ban
+
+----------------------------------------
+Trên Debian/Ubuntu (Deb-based OS), cài Fail2ban
+----------------------------------------
+sudo apt update && sudo apt upgrade -y
+sudo apt install fail2ban -y
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+1. /etc/fail2ban/filter.d/
+--------------------------------------------------------------------------------
+Chứa các filter (bộ regex để đọc log).
+Mỗi dịch vụ sẽ có một file .conf riêng, ví dụ:
+sshd.conf → lọc log SSH
+nginx-http-auth.conf → lọc log Nginx auth
+apache-auth.conf → lọc log Apache
+Bạn có thể copy, sửa hoặc tạo filter mới để bắt các dòng log theo ý.
+
+--------------------------------------------------------------------------------
+2. /etc/fail2ban/action.d/
+--------------------------------------------------------------------------------
+Chứa các action (hành động Fail2ban thực hiện khi phát hiện vi phạm).
+Ví dụ:
+iptables-multiport.conf → chặn IP bằng iptables trên nhiều port.
+sendmail.conf → gửi email cảnh báo.
+nftables.conf → chặn bằng nftables.
+Nếu muốn custom (ví dụ vừa chặn vừa gửi mail), bạn có thể tạo action riêng.
+
+--------------------------------------------------------------------------------
+3. /etc/fail2ban/jail.d/ hoặc file jail.local
+--------------------------------------------------------------------------------
+Đây là nơi bạn kích hoạt và cấu hình jail.
+Jail = Filter + Action + Tham số (bantime, findtime, maxretry…).
+Ví dụ /etc/fail2ban/jail.d/sshd.local:
+[sshd]
+enabled  = true
+filter   = sshd
+action   = iptables-multiport[name=SSH, port=ssh, protocol=tcp]
+logpath  = /var/log/auth.log
+maxretry = 3
+bantime  = 1800
+findtime = 600
+
+
+--------------------------------------------------------------------------------
+Tổng kết
+--------------------------------------------------------------------------------
+filter.d → “Mắt” → đọc log, tìm dấu hiệu tấn công.
+action.d → “Tay” → ra đòn (ban IP, gửi mail…).
+jail.d/jail.local → “Bộ điều khiển” → kết hợp filter + action + luật.
