@@ -72,6 +72,10 @@ maxretry = 3
 bantime  = 1800
 findtime = 600
 
+Unban IP trong một jail cụ thể:
+sudo fail2ban-client set <JAIL> unbanip <IP>
+# ví dụ:
+sudo fail2ban-client set test unbanip 1.1.1.1
 
 --------------------------------------------------------------------------------
 Tổng kết
@@ -79,3 +83,4 @@ Tổng kết
 filter.d → “Mắt” → đọc log, tìm dấu hiệu tấn công.
 action.d → “Tay” → ra đòn (ban IP, gửi mail…).
 jail.d/jail.local → “Bộ điều khiển” → kết hợp filter + action + luật.
+
